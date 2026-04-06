@@ -2,6 +2,20 @@
 
 一款功能完善的 PHP 个人主页/作品集展示系统，支持响应式布局、后台管理、留言板、技能展示、项目展示等功能。
 
+# 程序截图
+- 首页
+![首页展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Home.png)
+- 后台
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-1.png)
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-2.png)
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-3.png)
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-4.png)
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-5.png)
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-6.png)
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-7.png)
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-8.png)
+![后台展示](https://raw.githubusercontent.com/XooUooX/Home/refs/heads/main/static/img/Admin-9.png)
+
 ## 功能特性
 
 ### 前端功能
