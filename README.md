@@ -93,8 +93,7 @@
    ];
    ```
 
-
-6. **访问后台**
+3. **访问后台**
    - 后台地址：`http://域名/admin/login.php`
    - 默认账号：`admin`
    - 默认密码：`admin123`
@@ -130,7 +129,11 @@
    - 配置 ICP 备案号
    - 设置版权起始年份
    - 上传背景图或使用渐变背景
-
+自带两款动态背景
+```
+/static/iframe/city-day.html
+/static/iframe/city-day-night.html
+```
 2. **社交链接**
    - 添加社交账号（GitHub、Twitter、邮箱等）
    - URL 支持三种类型：
