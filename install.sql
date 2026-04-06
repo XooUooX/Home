@@ -1,0 +1,135 @@
+-- 个人主页系统
+
+-- 管理员表
+CREATE TABLE IF NOT EXISTS admin (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 个人资料表
+CREATE TABLE IF NOT EXISTS config (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    avatar VARCHAR(500),
+    bio TEXT,
+    status_online TINYINT(1) DEFAULT 1,
+    icp VARCHAR(100),
+    copyright_year_start INT DEFAULT 2019,
+    background_url VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 技能分类表
+CREATE TABLE IF NOT EXISTS category (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 技能表
+CREATE TABLE IF NOT EXISTS skill (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    icon VARCHAR(500),
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 社交链接表
+CREATE TABLE IF NOT EXISTS link (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    url VARCHAR(500) NOT NULL,
+    icon VARCHAR(500),
+    sort_order INT DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 项目/作品表
+CREATE TABLE IF NOT EXISTS project (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    image VARCHAR(500),
+    url VARCHAR(500),
+    github_repo VARCHAR(100),
+    github_stars INT DEFAULT 0,
+    github_forks INT DEFAULT 0,
+    github_updated TIMESTAMP NULL,
+    sort_order INT DEFAULT 0,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 插入默认管理员账号 (密码: admin123)
+INSERT INTO admin (username, password) VALUES 
+('admin', '$2y$10$/GuOzvoRV3ciNWKItSWY/O3ptoK2Hot7dtqYIulVnd2zMhv4yvCQ2');
+
+-- 留言表
+CREATE TABLE IF NOT EXISTS message (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nickname VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    ip VARCHAR(45),
+    status ENUM('unread', 'read', 'replied') DEFAULT 'unread',
+    reply_content TEXT,
+    reply_time TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- SMTP设置表
+CREATE TABLE IF NOT EXISTS smtp (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    host VARCHAR(255) NOT NULL DEFAULT '',
+    port INT NOT NULL DEFAULT 587,
+    username VARCHAR(255) NOT NULL DEFAULT '',
+    password VARCHAR(255) NOT NULL DEFAULT '',
+    encryption VARCHAR(20) NOT NULL DEFAULT 'tls',
+    from_email VARCHAR(255) NOT NULL DEFAULT '',
+    from_name VARCHAR(100) NOT NULL DEFAULT '',
+    enabled TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 功能开关表
+CREATE TABLE IF NOT EXISTS toggle (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    toggle_key VARCHAR(50) NOT NULL UNIQUE,
+    toggle_name VARCHAR(100) NOT NULL,
+    is_enabled TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 插入默认功能开关
+INSERT INTO toggle (toggle_key, toggle_name, is_enabled) VALUES
+('links', '社交链接', 1),
+('messages', '留言板', 1),
+('skills', '技能展示', 1),
+('projects', '项目展示', 1);
+
+-- SEO设置表
+CREATE TABLE IF NOT EXISTS seo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    site_title VARCHAR(200) NOT NULL DEFAULT '',
+    site_description TEXT,
+    site_keywords TEXT,
+    favicon VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

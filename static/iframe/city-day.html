@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>城市白天</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #fff;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(180deg, 
+                #87CEEB 0%, 
+                #B0E0E6 30%, 
+                #E0F6FF 60%, 
+                #F5F5F0 85%, 
+                #fff 100%);
+        }
+
+        #vignette {
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(255,255,255,0.3) 100%);
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 100%;
+            height: 300px;
+            transform: translateX(-50%);
+            z-index: 50;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="vignette"></div>
+
+    <script>
+        function screenWidth() {
+            let w = document.body.offsetWidth;
+            if (w < 600) w = 600;
+            if (w > 1400 && w < 2000) w = 1400;
+            if (w > 2000) w = 2000;
+            return w;
+        }
+
+        const CANVAS_WIDTH = screenWidth();
+        const CANVAS_HEIGHT = 300;
+        const FRAME_TIME = 1000 / 16;
+
+        const CAMERA = {
+            x: 0,
+            y: 6,
+            z: 0,
+            fov: 200,
+            dist: 40,
+            zSpeed: 0.006,
+        };
+
+        const VP_OFS = { x: 0.5, y: 0.45 };
+
+        let c, ctx, output_c, output_ctx;
+        let _t, _dt, _ft;
+
+        const RNG = {
+            seed: 1,
+            random() {
+                const x = Math.sin(RNG.seed++) * 10000;
+                return x - Math.floor(x);
+            },
+            randomInRange(min, max) {
+                return Math.floor(RNG.random() * (max - min + 1)) + min;
+            }
+        };
+
+        const CLOUD_COUNT = 6;
+
+        const BUILDING_ROWS = 40;
+        const BUILDING_ROW_DEPTH = 0.8;
+        const BUILDING_ROW_WIDTH = 70;
+        const BUILDING_MIN_HEIGHT = 1.0;
+        const BUILDING_MAX_HEIGHT = 4.5;
+        const FADE_GRAY_VALUE = 60;
+        const FADE_OFFSET = 0.25;
+
+        const renderVars = {
+            vPointX: 0,
+            vPointY: 0,
+            rowScreenX: 0,
+            rowZ: 0,
+            rowRelativeZ: 0,
+            scalingFactor: 0,
+            rowScreenWidth: 0,
+            rowScreenHeight: 0,
+            rowScreenY: 0,
+            closestBuildingRow: 0,
+            rowBuildingCount: 0,
+            rowBuildingScreenWidth: 0,
+            rowShade: 0,
+            rowStyleString: '',
+            buildingHeight: 0,
+            buildingScreenHeight: 0,
+            buildingScreenX: 0,
+            buildingScreenY: 0,
+        };
+
+        function update() {
+            _t = Date.now() * 0.001;
+            CAMERA.z += CAMERA.zSpeed;
+        }
+
+        function drawClouds() {
+            RNG.seed = Math.floor(_t * 0.1);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            
+            for (let i = 0; i < CLOUD_COUNT; i++) {
+                const x = ((RNG.random() * c.width + _t * 15) % (c.width + 300)) - 150;
+                const y = RNG.random() * c.height * 0.4 + 20;
+                const width = 60 + RNG.random() * 80;
+                const height = 25 + RNG.random() * 20;
+                
+                ctx.beginPath();
+                ctx.ellipse(x, y, width, height, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.ellipse(x - width * 0.3, y + 5, width * 0.5, height * 0.7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.ellipse(x + width * 0.3, y + 3, width * 0.6, height * 0.8, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawSun() {
+            const sunY = CANVAS_HEIGHT * 0.35;
+            const sunX = c.width * 0.75;
+            
+            const gradient = ctx.createRadialGradient(
+                sunX, sunY, 0,
+                sunX, sunY, 80
+            );
+            gradient.addColorStop(0, 'rgba(255, 220, 100, 0.6)');
+            gradient.addColorStop(0.3, 'rgba(255, 200, 80, 0.3)');
+            gradient.addColorStop(0.6, 'rgba(255, 180, 60, 0.1)');
+            gradient.addColorStop(1, 'transparent');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, c.width, c.height);
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#FFED4E';
+            ctx.beginPath();
+            ctx.arc(sunX - 3, sunY - 2, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawBirds() {
+            RNG.seed = Math.floor(_t * 0.2);
+            ctx.strokeStyle = 'rgba(80, 80, 80, 0.5)';
+            ctx.lineWidth = 1.5;
+            
+            for (let i = 0; i < 4; i++) {
+                const x = ((RNG.random() * c.width + _t * 40 + i * 150) % (c.width + 100)) - 50;
+                const y = RNG.random() * c.height * 0.35 + 30;
+                
+                ctx.beginPath();
+                ctx.moveTo(x - 10, y);
+                ctx.quadraticCurveTo(x - 5, y - 4, x, y);
+                ctx.quadraticCurveTo(x + 5, y - 4, x + 10, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawBuildings() {
+            renderVars.closestBuildingRow = Math.floor(CAMERA.z / BUILDING_ROW_DEPTH);
+
+            for (let i = BUILDING_ROWS; i > 0; i--) {
+                renderVars.rowZ = (renderVars.closestBuildingRow * BUILDING_ROW_DEPTH) + (BUILDING_ROW_DEPTH * i);
+                renderVars.rowRelativeZ = renderVars.rowZ - CAMERA.z;
+
+                if (renderVars.rowRelativeZ <= 0 || renderVars.rowRelativeZ > CAMERA.dist) continue;
+
+                renderVars.scalingFactor = CAMERA.fov / renderVars.rowRelativeZ;
+                renderVars.rowScreenWidth = BUILDING_ROW_WIDTH * renderVars.scalingFactor;
+                renderVars.rowScreenHeight = BUILDING_MAX_HEIGHT * renderVars.scalingFactor;
+                renderVars.rowScreenX = CAMERA.x * renderVars.scalingFactor + renderVars.vPointX - 
+                                      (renderVars.rowScreenWidth * 0.5);
+                renderVars.rowScreenY = CAMERA.y * renderVars.scalingFactor + renderVars.vPointY - 
+                                      renderVars.rowScreenHeight;
+
+                RNG.seed = renderVars.rowZ;
+                renderVars.rowBuildingCount = RNG.randomInRange(12, 50);
+                renderVars.rowBuildingScreenWidth = renderVars.rowScreenWidth / renderVars.rowBuildingCount;
+
+                renderVars.rowShade = Math.max(0, Math.round(FADE_GRAY_VALUE * 
+                    (renderVars.rowRelativeZ / CAMERA.dist - FADE_OFFSET)));
+                
+                const gray = 80 + renderVars.rowShade;
+                renderVars.rowStyleString = `rgb(${gray},${gray},${gray * 1.02})`;
+                ctx.fillStyle = renderVars.rowStyleString;
+
+                let gapSize = 0;
+                let hasGap = false;
+                
+                for (let j = 0; j < renderVars.rowBuildingCount; j++) {
+                    RNG.seed = renderVars.rowZ + j * 2.5;
+                    
+                    renderVars.buildingHeight = Math.max(BUILDING_MIN_HEIGHT, 
+                        RNG.random() * BUILDING_MAX_HEIGHT * (0.7 + RNG.random() * 0.6));
+
+                    renderVars.buildingScreenHeight = renderVars.buildingHeight * renderVars.scalingFactor;
+                    renderVars.buildingScreenX = renderVars.rowScreenX + (j * renderVars.rowBuildingScreenWidth) + gapSize;
+                    renderVars.buildingScreenY = renderVars.rowScreenY + renderVars.rowScreenHeight - 
+                                               renderVars.buildingScreenHeight;
+
+                    if (RNG.random() < 0.08 && !hasGap && j > 2 && j < renderVars.rowBuildingCount - 2) {
+                        gapSize = renderVars.rowBuildingScreenWidth * (0.5 + RNG.random());
+                        hasGap = true;
+                    } else {
+                        gapSize = 0;
+                        hasGap = false;
+                        
+                        const width = Math.ceil(renderVars.rowBuildingScreenWidth);
+                        const height = renderVars.buildingScreenHeight;
+                        
+                        if (renderVars.buildingScreenY + height > 0 && renderVars.buildingScreenX < c.width) {
+                            ctx.fillRect(renderVars.buildingScreenX, 
+                                        renderVars.buildingScreenY, 
+                                        width, 
+                                        height);
+                            
+                            if (RNG.random() < 0.1 && renderVars.buildingHeight > BUILDING_MAX_HEIGHT * 0.5 && 
+                                renderVars.rowRelativeZ < CAMERA.dist * 0.5) {
+                                ctx.fillStyle = 'rgba(200, 220, 255, 0.6)';
+                                const winWidth = width * 0.3;
+                                const winHeight = height * 0.08;
+                                const winY = renderVars.buildingScreenY + height * 0.15 + RNG.random() * height * 0.3;
+                                ctx.fillRect(renderVars.buildingScreenX + (width - winWidth) * 0.5, winY, winWidth, winHeight);
+                                ctx.fillStyle = renderVars.rowStyleString;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function render() {
+            renderVars.vPointX = Math.floor(c.width * VP_OFS.x);
+            renderVars.vPointY = Math.floor(c.height * VP_OFS.y);
+            renderVars.rowScreenX = CAMERA.x + renderVars.vPointX;
+
+            ctx.clearRect(0, 0, c.width, c.height);
+            output_ctx.clearRect(0, 0, output_c.width, output_c.height);
+
+            drawSun();
+            drawClouds();
+            drawBuildings();
+            drawBirds();
+
+            output_ctx.drawImage(c, 0, 0);
+        }
+
+        function frame() {
+            requestAnimationFrame(frame);
+            _ft = Date.now();
+            update();
+            if (_ft - _dt > FRAME_TIME) {
+                render();
+                _dt = _ft;
+            }
+        }
+
+        function start() {
+            _dt = _ft = Date.now();
+
+            c = document.createElement('canvas');
+            ctx = c.getContext('2d');
+
+            output_c = document.createElement('canvas');
+            output_ctx = output_c.getContext('2d');
+
+            output_c.width = c.width = CANVAS_WIDTH;
+            output_c.height = c.height = CANVAS_HEIGHT;
+            document.body.appendChild(output_c);
+
+            frame();
+        }
+
+        start();
+
+        window.addEventListener('resize', function() {
+            const newWidth = screenWidth();
+            if (newWidth !== CANVAS_WIDTH) {
+                output_c.width = c.width = newWidth;
+            }
+        });
+    </script>
+</body>
+</html>
