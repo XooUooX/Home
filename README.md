@@ -55,10 +55,10 @@
 │       └── js/
 ├── lib/                    # 第三方库
 │   └── PHPMailer/         # PHPMailer 邮件库
-├── img/                    # 图片资源目录
-├── static/                 # 前台静态资源
-│   ├── css/
-│   └── js/
+├── static/                 # 静态资源
+│   ├── css/               # 样式文件
+│   ├── js/                # 脚本文件
+│   └── img/               # 图片资源
 ├── update/                 # 更新脚本目录
 ├── config.php             # 数据库配置文件
 ├── db.php                 # 数据库连接类
@@ -72,8 +72,8 @@
 ## 安装部署
 
 ### 环境要求
-- PHP 7.4 或更高版本
-- MySQL 5.7 或更高版本 / MariaDB 10.3+
+- PHP 7.1 或更高版本
+- MySQL 5.7 或更高版本
 - Apache/Nginx 服务器
 - 启用 PDO 扩展
 
@@ -83,10 +83,11 @@
 将项目文件上传到网站根目录
 
 2. **配置数据库**
-   编辑 `config.php`：
+   编辑 `config.php`，填入数据库信息：
    ```php
    return [
        'host' => 'localhost',
+   编辑 `config.php`：
        'database' => 'root',
        'username' => 'root',
        'password' => 'password',
@@ -154,6 +155,7 @@
      - 图片链接 → 点击放大查看
      - 留空 → 点击显示封面大图
    - 支持显示/隐藏控制
+   - **GitHub 项目**：填写 GitHub 仓库链接自动获取 Star 数量前台展示
 
 5. **功能开关**
    - 控制首页各模块是否显示
@@ -186,9 +188,9 @@
 ```php
 return [
     'host' => 'localhost',           // 数据库主机
-    'database' => 'index',            // 数据库名
-    'username' => 'index',            // 数据库用户名
-    'password' => 'password',         // 数据库密码
+    'database' => '',                 // 数据库名
+    'username' => '',                 // 数据库用户名
+    'password' => '',                 // 数据库密码
 ];
 ```
 
@@ -215,6 +217,8 @@ return [
 - `isImageUrl($url)` - 判断 URL 是否为图片
 - `sendReplyEmail()` - 发送回复邮件
 - `sendNewMessageNotification()` - 发送新留言通知
+- `extractGithubRepo($url)` - 从 URL 提取 GitHub 仓库名
+- `fetchGithubRepoInfo($repo)` - 获取 GitHub 仓库信息（stars/forks）
 
 ### PRG 模式
 
@@ -234,12 +238,13 @@ return [
 
 ### 主要功能迭代
 
+- **GitHub 集成**：项目展示支持自动获取 GitHub Star 数量
 - **功能开关系统**：支持控制首页各模块显示
 - **邮件通知**：新留言通知管理员，回复通知访客
 - **PRG 模式**：修复表单重复提交问题
 - **图片弹窗**：支持社交链接和项目图片放大查看
 - **响应式布局**：适配移动端
-- **后台重构**：分类菜单、操作按钮优化
+- **后台重构**：分类菜单、操作按钮优化、CSS/JS 分离
 
 ## 常见问题
 
